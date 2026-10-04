@@ -67,12 +67,16 @@ st.markdown(
 
 if "page" not in st.session_state:
     st.session_state.page = "Home"
+if "page_navigation" not in st.session_state:
+    st.session_state.page_navigation = st.session_state.page
 if "report" not in st.session_state:
     st.session_state.report = None
 if "image_bytes" not in st.session_state:
     st.session_state.image_bytes = None
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if "upload_error" not in st.session_state:
+    st.session_state.upload_error = ""
 
 st.markdown(
     '<div class="brandbar"><div class="brand"><span class="brand-mark">✳</span> urbanleaf<span style="color:#008c54;font-weight:500">.ai</span></div><div class="brand-note">A little more life in every leaf.</div></div>',
@@ -82,19 +86,42 @@ st.markdown(
 selected_page = st.radio(
     "Main navigation",
     PAGES,
-    index=PAGES.index(st.session_state.page),
     horizontal=True,
     label_visibility="collapsed",
     key="page_navigation",
+    on_change=lambda: setattr(st.session_state, "page", st.session_state.page_navigation),
 )
-st.session_state.page = selected_page
 st.progress((PAGES.index(selected_page) + 1) / len(PAGES), text=f"Page {PAGES.index(selected_page) + 1} of {len(PAGES)}")
 
 
 def go_to(page):
+    # This runs as a widget callback, before Streamlit instantiates page_navigation.
     st.session_state.page = page
     st.session_state.page_navigation = page
-    st.rerun()
+
+
+def analyze_uploaded_leaf():
+    uploaded_file = st.session_state.get("leaf_upload")
+    if not uploaded_file:
+        return
+    image_bytes = uploaded_file.getvalue()
+    st.session_state.image_bytes = image_bytes
+    st.session_state.image_name = uploaded_file.name
+    try:
+        response = requests.post(
+            API_URL,
+            files={"file": (uploaded_file.name, image_bytes, uploaded_file.type)},
+            timeout=60,
+        )
+        response.raise_for_status()
+        st.session_state.report = response.json()["data"]
+        st.session_state.chat_history = []
+        st.session_state.upload_error = ""
+        go_to("Your results")
+    except requests.RequestException:
+        st.session_state.upload_error = "We couldn’t reach the diagnosis service. Start the FastAPI server and try again."
+    except (KeyError, ValueError):
+        st.session_state.upload_error = "The diagnosis service returned an unexpected response. Please try again."
 
 
 def get_report():
@@ -129,8 +156,7 @@ if selected_page == "Home":
         with col:
             st.markdown(f'<div class="info-card"><div class="step-label">{number}</div><h3>{title}</h3><p>{copy}</p></div>', unsafe_allow_html=True)
     st.markdown('<div class="statrow"><div class="stat"><b>3</b><span>garden crops</span></div><div class="stat"><b>10</b><span>health categories</span></div><div class="stat"><b>1</b><span>simple next step</span></div></div>', unsafe_allow_html=True)
-    if st.button("Start with a leaf photo  →"):
-        go_to("Upload a leaf")
+    st.button("Start with a leaf photo  →", on_click=go_to, args=("Upload a leaf",))
 
 elif selected_page == "Upload a leaf":
     st.markdown('<div class="step-label">Your garden, in focus · 01</div><h1>Upload a leaf photo</h1><p>Choose a clear, well-lit JPG or PNG image with one leaf in focus.</p>', unsafe_allow_html=True)
@@ -140,26 +166,12 @@ elif selected_page == "Upload a leaf":
         if uploaded_file:
             st.session_state.image_bytes = uploaded_file.getvalue()
             st.session_state.image_name = uploaded_file.name
-            if st.button("Analyze this leaf  →", use_container_width=True):
-                with st.spinner("Taking a closer look at your leaf…"):
-                    try:
-                        response = requests.post(
-                            API_URL,
-                            files={"file": (uploaded_file.name, st.session_state.image_bytes, uploaded_file.type)},
-                            timeout=60,
-                        )
-                        response.raise_for_status()
-                        st.session_state.report = response.json()["data"]
-                        st.session_state.chat_history = []
-                        go_to("Your results")
-                    except requests.RequestException:
-                        st.error("We couldn’t reach the diagnosis service. Start the FastAPI server and try again.")
-                    except (KeyError, ValueError):
-                        st.error("The diagnosis service returned an unexpected response. Please try again.")
+            st.button("Analyze this leaf  →", use_container_width=True, on_click=analyze_uploaded_leaf)
+        if st.session_state.upload_error:
+            st.error(st.session_state.upload_error)
         elif st.session_state.image_bytes:
             st.info(f"Photo ready: {st.session_state.get('image_name', 'leaf image')}. Choose another image above or continue your previous result.")
-            if st.button("View previous result  →"):
-                go_to("Your results")
+            st.button("View previous result  →", on_click=go_to, args=("Your results",))
     with col_image:
         if st.session_state.image_bytes:
             st.image(st.session_state.image_bytes, caption="Selected leaf photo", use_container_width=True)
@@ -170,8 +182,7 @@ elif selected_page == "Your results":
     st.markdown('<div class="step-label">Your plant health check · 02</div><h1>Your results</h1>', unsafe_allow_html=True)
     if not st.session_state.report:
         st.info("Upload a leaf photo first to see your diagnosis.")
-        if st.button("Go to photo upload  →"):
-            go_to("Upload a leaf")
+        st.button("Go to photo upload  →", on_click=go_to, args=("Upload a leaf",))
     else:
         report, guidance = get_report()
         left, right = st.columns([0.8, 1.2], gap="large")
@@ -191,15 +202,13 @@ elif selected_page == "Your results":
             st.caption("This is an AI-assisted image classification. Check the plant and growing conditions directly if symptoms persist.")
             st.markdown('</div>', unsafe_allow_html=True)
         st.markdown("")
-        if st.button("See remedies and ask a question  →"):
-            go_to("Remedies & chat")
+        st.button("See remedies and ask a question  →", on_click=go_to, args=("Remedies & chat",))
 
 else:
     st.markdown('<div class="step-label">Practical plant care · 03</div><h1>Remedies & chat</h1><p>Review the guidance for this result, then ask the UrbanLeaf helper a question.</p>', unsafe_allow_html=True)
     if not st.session_state.report:
         st.info("Upload a leaf photo and view its result to get tailored remedies and chat guidance.")
-        if st.button("Go to photo upload  →"):
-            go_to("Upload a leaf")
+        st.button("Go to photo upload  →", on_click=go_to, args=("Upload a leaf",))
     else:
         report, guidance = get_report()
         crop_name = guidance.get("disease_name", report.get("prediction", "this result"))
