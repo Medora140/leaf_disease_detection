@@ -32,15 +32,18 @@ st.markdown(
     [data-testid="stFileUploader"] button { background:#fff !important; color:#003d4f !important; border:1px solid #7b9b8d !important; }
     .stButton > button { border:0; border-radius:999px; background:#00ed64; color:#001e2b; font-weight:700; min-height:44px; padding:0 22px; }
     .stButton > button:hover { background:#00d85b; color:#001e2b; }
-    [data-testid="stRadio"] label, [data-testid="stRadio"] p { color:#23404b !important; }
     [data-testid="stChatMessage"] { background:#f6f9f7; border:1px solid #e2ebe7; border-radius:14px; }
     [data-testid="stChatMessage"] p { color:#203a45 !important; }
     [data-testid="stChatInput"] textarea { color:#001e2b !important; background:#fff !important; }
     [data-testid="stChatInput"] textarea::placeholder { color:#657780 !important; opacity:1; }
-    .brandbar { display:flex; align-items:center; justify-content:space-between; padding:20px 0 12px; border-bottom:1px solid #e5ece9; margin-bottom:16px; }
+    .brandbar { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid #e5ece9; margin-bottom:14px; }
     .brand { display:flex; align-items:center; gap:10px; color:#001e2b; font:800 18px Manrope,sans-serif; }
     .brand-mark { width:34px; height:34px; display:grid; place-items:center; border-radius:12px; background:#00ed64; }
     .brand-note { color:#52636d; font-size:12px; }
+    .nav-caption { margin:0 0 8px; color:#52636d; font-size:10px; font-weight:700; letter-spacing:1.3px; }
+    [data-testid="stBaseButton-secondary"] { background:#f5f8f7 !important; color:#24444d !important; border:1px solid #d9e2e0 !important; }
+    [data-testid="stBaseButton-primary"] { background:#00ed64 !important; color:#001e2b !important; border:1px solid #00b545 !important; box-shadow:0 3px 10px #00ed642b; }
+    [data-testid="stBaseButton-secondary"], [data-testid="stBaseButton-primary"] { min-height:44px !important; font-size:13px !important; white-space:nowrap !important; }
     .step-label { margin:8px 0 4px; color:#00844a; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.4px; }
     .hero { display:grid; grid-template-columns:1.08fr .92fr; gap:30px; align-items:center; background:radial-gradient(ellipse at 85% 15%,#07543e,transparent 42%),#001e2b; color:white; padding:56px 48px; border-radius:24px; overflow:hidden; }
     .hero h1 { color:#fff !important; font-size:clamp(40px,5vw,63px); line-height:1.08; margin:10px 0 18px; letter-spacing:-2px; }
@@ -67,8 +70,6 @@ st.markdown(
 
 if "page" not in st.session_state:
     st.session_state.page = "Home"
-if "page_navigation" not in st.session_state:
-    st.session_state.page_navigation = st.session_state.page
 if "report" not in st.session_state:
     st.session_state.report = None
 if "image_bytes" not in st.session_state:
@@ -83,21 +84,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-selected_page = st.radio(
-    "Main navigation",
-    PAGES,
-    horizontal=True,
-    label_visibility="collapsed",
-    key="page_navigation",
-    on_change=lambda: setattr(st.session_state, "page", st.session_state.page_navigation),
-)
-st.progress((PAGES.index(selected_page) + 1) / len(PAGES), text=f"Page {PAGES.index(selected_page) + 1} of {len(PAGES)}")
-
-
 def go_to(page):
-    # This runs as a widget callback, before Streamlit instantiates page_navigation.
+    # Button callbacks update the page before Streamlit reruns the script.
     st.session_state.page = page
-    st.session_state.page_navigation = page
 
 
 def analyze_uploaded_leaf():
@@ -129,6 +118,21 @@ def get_report():
     prediction = report.get("prediction", "")
     guidance = report.get("agricultural_guidance") or get_disease_advice(prediction)
     return report, guidance
+
+
+selected_page = st.session_state.page
+st.markdown('<div class="nav-caption">YOUR GARDEN · YOUR PROGRESS</div>', unsafe_allow_html=True)
+nav_columns = st.columns(4, gap="small")
+for index, (nav_column, page) in enumerate(zip(nav_columns, PAGES), start=1):
+    with nav_column:
+        st.button(
+            f"{index:02d}  {page}",
+            key=f"nav_{index}",
+            type="primary" if selected_page == page else "secondary",
+            use_container_width=True,
+            on_click=go_to,
+            args=(page,),
+        )
 
 
 if selected_page == "Home":
