@@ -1,0 +1,48 @@
+# Python bytecode and cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Streamlit local configuration and generated files
+.streamlit/secrets.toml
+*.log
+logs/
+uploads/
+outputs/
+
+# Dataset images and generated dataset artifacts
+data/raw/
+data/processed/
+data/urban_collected/
+data/**/dataset_manifest.csv
+
+# Training checkpoints and experiment outputs
+*.pth
+*.pt
+*.ckpt
+checkpoints/
+runs/
+wandb/
+mlruns/
+
+# Keep the ONNX inference model and its external weights file (required at runtime).
+# Keep notebook source files, but ignore their generated checkpoints.
+.ipynb_checkpoints/
