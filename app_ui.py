@@ -21,15 +21,47 @@ st.markdown(
     :root { --teal:#001e2b; --deep:#003d4f; --green:#00ed64; --mint:#e3fcef; --ink:#001e2b; --muted:#52636d; --line:#d9e2e0; }
     html, body, [class*="css"] { font-family:'DM Sans',sans-serif; }
     .stApp { background:#fff; color:var(--ink); }
-    [data-testid="stHeader"] { background:#fff; }
-    [data-testid="stToolbar"] { visibility:hidden; }
-    .block-container { max-width:1160px; padding:0 28px 3rem; }
+    /* --- AFTER (FIXED) --- */
+    [data-testid="stHeader"] { background: transparent !important; height: 0rem !important; }
+    [data-testid="stToolbar"] { visibility: hidden !important; }
+    .block-container { max-width: 1160px; padding-top: 0.5rem !important; padding-bottom: 3rem !important; padding-left: 28px !important; padding-right: 28px !important; }
     p, li, label, [data-testid="stCaptionContainer"] { color:#344b56; }
     h1,h2,h3,h4 { color:var(--teal) !important; font-family:'Manrope',sans-serif !important; letter-spacing:-.5px; }
     [data-testid="stMarkdownContainer"] p { color:#344b56; line-height:1.7; }
-    [data-testid="stFileUploader"] section { background:#f7faf8; border:1px dashed #7b9b8d; border-radius:16px; }
-    [data-testid="stFileUploader"] section *, [data-testid="stFileUploader"] small { color:#173b31 !important; }
-    [data-testid="stFileUploader"] button { background:#fff !important; color:#003d4f !important; border:1px solid #7b9b8d !important; }
+    /* --- CLEAN FILE UPLOADER STYLING --- */
+    [data-testid="stFileUploader"] section { 
+        background: #f7faf8; 
+        border: 1px dashed #7b9b8d; 
+        border-radius: 16px; 
+    }
+    
+    /* Target dropzone text without leaking into the uploaded file chip */
+    [data-testid="stFileUploaderDropzoneInstructions"] *, 
+    [data-testid="stFileUploader"] section small { 
+        color: #173b31 !important; 
+    }
+    
+    /* Upload button inside dropzone */
+    [data-testid="stFileUploader"] section button { 
+        background: #fff !important; 
+        color: #003d4f !important; 
+        border: 1px solid #7b9b8d !important; 
+    }
+
+    /* Target the file chip container directly */
+    [data-testid="stFileUploaderFile"],
+    [data-testid="stFileUploaderFileName"],
+    [data-testid="stFileUploaderFileData"] {
+        background-color: #001e2b !important;
+    }
+
+    /* Force all text, spans, and icons inside the file chip to crisp white */
+    [data-testid="stFileUploaderFile"] *,
+    [data-testid="stFileUploaderFileName"] *,
+    [data-testid="stFileUploaderFileData"] * {
+        color: #ffffff !important;
+        fill: #ffffff !important;
+    }
     .stButton > button { border:0; border-radius:999px; background:#00ed64; color:#001e2b; font-weight:700; min-height:44px; padding:0 22px; }
     .stButton > button:hover { background:#00d85b; color:#001e2b; }
     [data-testid="stChatMessage"] { background:#f6f9f7; border:1px solid #e2ebe7; border-radius:14px; }
